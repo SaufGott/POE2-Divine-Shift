@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PoE2 Triangular Arbitrage Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>PoE2 Triangular Arbitrage</h1>
+      <div class="labels">
+        <label>C1 <input id="label-c1" /></label>
+        <label>C2 <input id="label-c2" /></label>
+        <label>Item <input id="label-item" /></label>
+      </div>
+      <button id="theme-toggle" class="mini" aria-label="switch between dark and light theme">dark</button>
+    </header>
+
+    <main class="grid">
+      <section class="panel" id="capture-panel">
+        <h2>Capture</h2>
+
+        <div class="controls">
+          <button id="start-ocr" class="primary">Start OCR</button>
+          <button id="stop-capture" disabled>Stop</button>
+          <button id="place-mode" class="toggle">Place region</button>
+          <div class="zoom">
+            <button id="zoom-out" class="mini">−</button>
+            <input id="zoom" type="range" min="1" max="8" step="1" aria-label="region view zoom" />
+            <button id="zoom-in" class="mini">+</button>
+            <span id="zoom-label" class="zoom-label">3x</span>
+          </div>
+        </div>
+
+        <div class="snapshot-row">
+          <button id="snapshot" class="snapshot">Snapshot value <kbd>Space</kbd></button>
+          <div class="pair-buttons" id="pair-buttons"></div>
+        </div>
+
+        <div class="region-view" id="region-view"><canvas id="region-canvas"></canvas></div>
+
+        <div class="live-read" id="live-read"></div>
+
+        <div class="place-view" id="place-view" hidden>
+          <canvas id="stage-canvas" width="1280" height="720"></canvas>
+          <div id="region-overlay"></div>
+        </div>
+
+        <div class="controls coords">
+          <label>x <input id="region-x" type="number" min="0" step="1" aria-label="region x position in pixels" /></label>
+          <label>y <input id="region-y" type="number" min="0" step="1" aria-label="region y position in pixels" /></label>
+          <label><input id="lock-region" type="checkbox" /> lock <kbd>L</kbd></label>
+          <label><input id="live-ocr" type="checkbox" /> live read</label>
+          <span id="ocr-status" class="status" role="status">idle</span>
+        </div>
+
+        <div class="norm-row">
+          <span id="region-norm" class="hint">position stored as fractions of the frame</span>
+        </div>
+
+        <details class="advanced">
+          <summary>Shortcuts</summary>
+          <div class="advanced-body">
+            <ul class="shortcut-list">
+              <li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> choose the pair the next snapshot fills</li>
+              <li><kbd>Space</kbd> snapshot the value for the active pair</li>
+              <li><kbd>P</kbd> show the full frame so the box can be placed</li>
+              <li><kbd>L</kbd> lock or unlock the region</li>
+              <li><kbd>+</kbd> <kbd>-</kbd> zoom the region view</li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="advanced">
+          <summary>Advanced</summary>
+          <div class="advanced-body">
+            <div class="controls">
+              <label>threshold
+                <select id="threshold-mode">
+                  <option value="otsu">auto (Otsu)</option>
+                  <option value="fixed">fixed cutoff</option>
+                  <option value="adaptive">local mean</option>
+                </select>
+              </label>
+              <label>cutoff <input id="cutoff" type="number" min="40" max="220" step="1" /></label>
+              <label>min stroke <input id="min-stroke" type="number" min="1" max="6" step="1" /></label>
+              <label><input id="outline" type="checkbox" /> strip outline (Tesseract path only)</label>
+              <label><input id="invert" type="checkbox" /> dark text on light</label>
+              <label>capture scale <input id="ocr-scale" type="number" min="1" max="6" step="0.5" /></label>
+            </div>
+            <div class="controls">
+              <label>region
+                <input id="region-width" type="number" min="20" max="1200" step="1" aria-label="region width in pixels" /> ×
+                <input id="region-height" type="number" min="10" max="400" step="1" aria-label="region height in pixels" />
+              </label>
+              <label>live interval <input id="live-interval" type="number" min="100" max="2000" step="50" /></label>
+              <label><input id="stable-read" type="checkbox" /> accept stable reads</label>
+              <label>identical reads <input id="stable-needed" type="number" min="1" max="10" step="1" /></label>
+            </div>
+            <div class="mask-row">
+              <canvas id="mask-preview" width="120" height="40"></canvas>
+              <span class="hint">what the pipeline sees for the current region</span>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel" id="rates-panel">
+        <h2>Rates</h2>
+        <div class="controls">
+          <label>offset step <input id="offset-step" type="text" aria-label="amount the plus and minus buttons move a rate by" /></label>
+          <span class="hint">+/– move a rate by this amount, for undercutting or overcutting the market</span>
+        </div>
+        <div id="rates-body"></div>
+      </section>
+
+      <section class="panel" id="playbook-panel">
+        <h2>Executable playbook</h2>
+        <div class="budget-row">
+          <label>Budget (units of C1)
+            <input id="budget" type="number" min="0" step="1" aria-label="budget in units of C1" />
+          </label>
+          <label class="check"><input id="allow-remainder" type="checkbox" /> allow leftovers</label>
+          <button id="reset" class="mini">Reset</button>
+        </div>
+        <div id="playbook-body"></div>
+      </section>
+    </main>
+
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+
+    <video id="video" playsinline muted></video>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>

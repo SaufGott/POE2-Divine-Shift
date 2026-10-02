@@ -1,0 +1,12 @@
+{
+  "name": "poe2-economy-helper",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local, offline browser dashboard for PoE2 triangular arbitrage (client-side OCR, exact integer quantization).",
+  "scripts": {
+    "vendor": "node scripts/fetch-vendor.mjs",
+    "serve": "node serve.mjs",
+    "test": "node --test"
+  }
+}
