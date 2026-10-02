@@ -7,7 +7,7 @@
  * is accepted).
  */
 
-import { loadState, saveState, clearState, rememberRegionNorm, regionForFrame } from './storage.js';
+import { loadState, saveState, clearState, rememberPlacement, placementForFrame } from './storage.js';
 import { makeRate } from './math.js';
 import { parseRatioLine, parseManual } from './parser.js';
 import { formatRate } from './suggest.js';
@@ -55,6 +55,11 @@ let masterBox = null;
 let placeMode = false;
 
 let activePair = 'r1';
+
+// state.region is an alias for the placement of the pair you are working on. There
+// is one placement per pair because the market UI shows a different row for each;
+// switching pairs points the alias at that pair's placement.
+state.region = state.placements[activePair];
 let liveEnabled = true;
 let liveBusy = false;
 let lastLiveAt = 0;
@@ -97,15 +102,40 @@ function ratesView() {
   };
 }
 
+/**
+ * Switch the pair you are working on. The region moves to that pair's row, because
+ * the market UI shows a different row for each pair. Locking pins the position you
+ * placed instead: it is carried to the pair you switch to.
+ */
+function setActivePair(id) {
+  const previous = state.placements[activePair];
+  const next = state.placements[id];
+
+  if (state.locked && previous) {
+    next.x = previous.x;
+    next.y = previous.y;
+    next.width = previous.width;
+    next.height = previous.height;
+    next.norm = previous.norm;
+  } else if (stageCanvas.width) {
+    // A default placement is recorded as fractions the first time it is used on a
+    // known frame, so a later resize rebuilds it instead of landing somewhere wrong.
+    if (!next.norm) rememberPlacement(state, id);
+    else placementForFrame(state, id, stageCanvas.width, stageCanvas.height);
+  }
+
+  activePair = id;
+  state.region = next;
+  live.targetId = id;
+  live.lastValue = state.lastSeen[id];
+
+  render();
+}
+
 function render() {
   const view = ratesView();
 
-  renderPairButtons(view, $('pair-buttons'), activePair, (id) => {
-    activePair = id;
-    live.targetId = id;
-    live.lastValue = state.lastSeen[id];
-    render();
-  });
+  renderPairButtons(view, $('pair-buttons'), activePair, setActivePair);
 
   renderLive(view, $('live-read'), live);
   renderRates(view, $('rates-body'), applyOffset, applySuggestion, lastChange);
@@ -120,10 +150,11 @@ function render() {
   $('zoom-label').textContent = `${state.zoom}x`;
   $('zoom').value = String(state.zoom);
 
+  const pair = pairLabels(state).find((p) => p.id === activePair);
   const norm = state.region.norm;
   $('region-norm').textContent = norm && state.frame.w
-    ? `stored position: x ${(norm.x * 100).toFixed(1)}% · y ${(norm.y * 100).toFixed(1)}% · ${(norm.w * 100).toFixed(1)}% × ${(norm.h * 100).toFixed(1)}% of the ${state.frame.w}x${state.frame.h} frame`
-    : 'the position is stored as fractions of the frame — place the box once to record it';
+    ? `${pair.baseName} / ${pair.quoteName}: x ${(norm.x * 100).toFixed(1)}% · y ${(norm.y * 100).toFixed(1)}% · ${(norm.w * 100).toFixed(1)}% × ${(norm.h * 100).toFixed(1)}% of the ${state.frame.w}x${state.frame.h} frame`
+    : `${pair.baseName} / ${pair.quoteName}: position stored as fractions of the frame — place the box once to record it`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -171,31 +202,32 @@ function applySuggestion(pairId, candidate) {
 /* Region placement (only visible while placing)                       */
 /* ------------------------------------------------------------------ */
 
-/** Save the region and keep the stored fractions in step with the pixels. */
+/** Save the placement for the pair you are working on. */
 function commitRegion() {
-  rememberRegionNorm(state);
+  rememberPlacement(state, activePair);
   saveState(state);
   render();
 }
 
 /**
- * The region is stored as fractions of the frame it was placed on. If the captured
- * frame is a different size — resized window, different DPI, another monitor — the
- * pixels are rebuilt from those fractions instead of landing somewhere wrong.
+ * Each placement is stored as fractions of the frame it was placed on. If the
+ * captured frame is a different size — resized window, different DPI, another
+ * monitor — the pixels are rebuilt from those fractions instead of landing
+ * somewhere wrong.
  */
 function adoptFrame() {
   if (!stageCanvas.width || !stageCanvas.height) return false;
 
   if (!state.frame.w || !state.frame.h) {
     state.frame = { w: stageCanvas.width, h: stageCanvas.height };
-    rememberRegionNorm(state);
+    for (const id of ['r1', 'r2', 'r3']) rememberPlacement(state, id);
     return false;
   }
 
-  if (state.frame.w === stageCanvas.width && state.frame.h === stageCanvas.height) return false;
+  if (state.frame.w === stageCanvas.width && stageCanvas.height === state.frame.h) return false;
 
   const from = `${Math.round(state.region.x)},${Math.round(state.region.y)}`;
-  if (!regionForFrame(state, stageCanvas.width, stageCanvas.height)) return false;
+  if (!placementForFrame(state, activePair, stageCanvas.width, stageCanvas.height)) return false;
 
   renderStatus(state, statusEl, `region rebuilt for a ${stageCanvas.width}x${stageCanvas.height} frame (was at ${from})`);
   notify(toastRoot, `frame size changed — region rebuilt from the stored position`, 'info');
@@ -213,7 +245,7 @@ function buildOverlay() {
   overlay.innerHTML = '';
 
   masterBox = document.createElement('div');
-  masterBox.className = `region-box${state.region.locked ? ' locked' : ''}`;
+  masterBox.className = `region-box${state.locked ? ' locked' : ''}`;
 
   const handle = document.createElement('span');
   handle.className = 'handle';
@@ -242,8 +274,8 @@ function positionOverlay() {
   masterBox.style.top = pct(state.region.y, H);
   masterBox.style.width = pct(state.region.width, W);
   masterBox.style.height = pct(state.region.height, H);
-  masterBox.classList.toggle('locked', state.region.locked);
-  masterBox.textContent = state.region.locked ? 'locked' : 'market line';
+  masterBox.classList.toggle('locked', state.locked);
+  masterBox.textContent = state.locked ? 'locked' : 'market line';
 }
 
 function canvasScale() {
@@ -253,7 +285,7 @@ function canvasScale() {
 }
 
 function startDrag(event) {
-  if (state.region.locked) return;
+  if (state.locked) return;
   event.preventDefault();
   const scale = canvasScale();
   let lastX = event.clientX;
@@ -278,7 +310,7 @@ function startDrag(event) {
 }
 
 function startResize(event) {
-  if (state.region.locked) return;
+  if (state.locked) return;
   event.preventDefault();
   event.stopPropagation();
   const scale = canvasScale();
@@ -641,9 +673,9 @@ function bindInputs() {
   }
 
   const lock = $('lock-region');
-  lock.checked = state.region.locked;
+  lock.checked = state.locked;
   lock.addEventListener('change', () => {
-    state.region.locked = lock.checked;
+    state.locked = lock.checked;
     saveState(state);
     render();
     if (lock.checked) notify(toastRoot, 'region locked — position and scale fixed', 'info');
@@ -699,12 +731,7 @@ function bindInputs() {
 
     if (event.key >= '1' && event.key <= '3') {
       const pair = PAIRS[Number(event.key) - 1];
-      if (pair) {
-        activePair = pair.id;
-        live.targetId = pair.id;
-        live.lastValue = state.lastSeen[pair.id];
-        render();
-      }
+      if (pair) setActivePair(pair.id);
       return;
     }
 
@@ -720,11 +747,11 @@ function bindInputs() {
     }
 
     if (event.key.toLowerCase() === 'l') {
-      state.region.locked = !state.region.locked;
-      $('lock-region').checked = state.region.locked;
+      state.locked = !state.locked;
+      $('lock-region').checked = state.locked;
       saveState(state);
       render();
-      notify(toastRoot, state.region.locked ? 'region locked' : 'region unlocked', 'info');
+      notify(toastRoot, state.locked ? 'region locked' : 'region unlocked', 'info');
     }
 
     if (event.key === '+' || event.key === '=') setZoom(state.zoom + 1);

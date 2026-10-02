@@ -50,7 +50,7 @@
         <div class="controls coords">
           <label>x <input id="region-x" type="number" min="0" step="1" aria-label="region x position in pixels" /></label>
           <label>y <input id="region-y" type="number" min="0" step="1" aria-label="region y position in pixels" /></label>
-          <label><input id="lock-region" type="checkbox" /> lock <kbd>L</kbd></label>
+          <label title="pins this position for every pair; off means each pair uses its own row"><input id="lock-region" type="checkbox" /> lock <kbd>L</kbd></label>
           <label><input id="live-ocr" type="checkbox" /> live read</label>
           <span id="ocr-status" class="status" role="status">idle</span>
         </div>
@@ -66,7 +66,7 @@
               <li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> choose the pair the next snapshot fills</li>
               <li><kbd>Space</kbd> snapshot the value for the active pair</li>
               <li><kbd>P</kbd> show the full frame so the box can be placed</li>
-              <li><kbd>L</kbd> lock or unlock the region</li>
+              <li><kbd>L</kbd> lock or unlock the region — locked pins this position for every pair, unlocked lets each pair use its own row</li>
               <li><kbd>+</kbd> <kbd>-</kbd> zoom the region view</li>
             </ul>
           </div>

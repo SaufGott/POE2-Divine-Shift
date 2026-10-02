@@ -37,19 +37,28 @@ removed: nothing reads them any more.
 
 ## The capture tab
 
-One fixed region on the single market line, e.g. `1 : 690`. The only preview is that region itself.
-The full frame appears only while placing the box.
+One region per pair, because the market UI shows a different row for each pair. The only preview is
+that region itself. The full frame appears only while placing the box.
 
 1. **Start OCR** and pick the game window.
-2. Press **Place region** (<kbd>P</kbd>) once, drag the box onto the market line, then turn it back
-   off. You can also type the x/y coordinates directly. The position is stored as fractions of the
-   frame it was placed on, so a window resize or a DPI change rebuilds it instead of landing
-   somewhere wrong — the Advanced section shows the stored percentages. Tick **lock** (<kbd>L</kbd>)
-   so it never moves or rescales again.
+2. The region starts at the positions that read reliably for the three rows:
+
+   | pair | x | y |
+   |---|---|---|
+   | Div / Ex | 784 | 551 |
+   | Omen / Ex | 765 | 615 |
+   | Div / Omen | 787 | 548 |
+
+   Switching pairs moves the region to that pair's row. Placing the box for a pair saves it as that
+   pair's position, so a fine-tune survives. Each position is stored as fractions of the frame it was
+   placed on, so a window resize or a DPI change rebuilds it instead of landing somewhere wrong — the
+   Advanced section shows the stored percentages for the pair you are on. **Lock** (<kbd>L</kbd>)
+   pins the current position for every pair instead of jumping to the pair's own row.
 3. Zoom the view with the slider or <kbd>+</kbd> / <kbd>-</kbd> (1–8). Zoom changes only what you
    see; it never changes what is captured, so recognition is unaffected.
 4. Click one of the three pair buttons (`Div / Ex`, `Omen / Ex`, `Div / Omen`) — or press
-   <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> — to choose which pair the next snapshot fills.
+   <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> — to choose which pair the next snapshot fills. This also
+   moves the region to that pair's row, unless it is locked.
 5. Open that trade pair in game, press **Snapshot value** (<kbd>Space</kbd>) — the reading is stored
    for that pair and the tool moves to the next one.
 6. The live read is one compact line: the pair, the raw text, the parsed value, `confidence xx%`, and
@@ -241,7 +250,7 @@ monospace fallback so the live read does not jitter. Animations respect `prefers
 | [src/ui.js](src/ui.js) | Rendering: pair buttons, live read, region view, rates, playbook, toasts |
 | [src/suggest.js](src/suggest.js) | Nearest ratio to an entered rate that fits the budget |
 | [src/main.js](src/main.js) | State, event wiring, live OCR loop, snapshot flow, shortcuts |
-| [src/storage.js](src/storage.js) | localStorage persistence, region as fractions of the frame |
+| [src/storage.js](src/storage.js) | localStorage persistence, per-pair placements as fractions of the frame |
 | [serve.mjs](serve.mjs) | Dependency-free static server |
 | [scripts/launch.ps1](scripts/launch.ps1) | Quick start: reuse a running server or start one, then open the browser |
 | [scripts/fetch-vendor.mjs](scripts/fetch-vendor.mjs) | One-time asset download into `vendor/` |
@@ -253,7 +262,7 @@ monospace fallback so the live read does not jitter. Animations respect `prefers
 | [tests/pipeline.test.mjs](tests/pipeline.test.mjs) | Threshold, outline, segmentation, atlas, stable read, cache |
 | [tests/train.test.mjs](tests/train.test.mjs) | PNG reader, glyph extraction, tolerant matching |
 | [tests/suggest.test.mjs](tests/suggest.test.mjs) | Nearest fitting ratio, decimal formatting |
-| [tests/storage.test.mjs](tests/storage.test.mjs) | Stored keys, region fractions, rebuild on a new frame size |
+| [tests/storage.test.mjs](tests/storage.test.mjs) | Stored keys, per-pair placements, rebuild on a new frame size |
 | [tests/ui.test.mjs](tests/ui.test.mjs) | Live read, offset buttons, change column, suggestion button, column order |
 | [tests/dom-stub.mjs](tests/dom-stub.mjs) | Minimal DOM stub so `src/ui.js` is testable in Node |
 

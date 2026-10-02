@@ -4,9 +4,21 @@
  *
  * Only keys the app can actually change or read are stored. Pipeline defaults that
  * have no UI live in the pipeline modules themselves, not here.
+ *
+ * One placement per pair, because the market UI shows a different row for each pair.
+ * Pixels are what you edit; norm is the same placement as fractions of the frame it
+ * was placed on, so a window resize or a DPI change does not move it.
  */
 
-const KEY = 'poe2-arb-dashboard-v6';
+const KEY = 'poe2-arb-dashboard-v7';
+
+// Positions that read reliably for the three market rows, for the window they were
+// observed on. Placing the box for a pair updates that pair's placement.
+export const DEFAULT_PLACEMENTS = {
+  r1: { x: 784, y: 551, width: 100, height: 30 },
+  r2: { x: 765, y: 615, width: 100, height: 30 },
+  r3: { x: 787, y: 548, width: 100, height: 30 },
+};
 
 export const DEFAULT_STATE = {
   labels: { c1: 'Div', c2: 'Ex', item: 'Omen' },
@@ -16,19 +28,16 @@ export const DEFAULT_STATE = {
     r3: { num: 10, den: 1 },
   },
 
-  // One fixed capture region on the single market line, e.g. "1 : 690".
-  // Pixels are what you edit; norm is the same region as fractions of the frame it
-  // was placed on, so a window resize or a DPI change does not move it.
-  region: {
-    x: 60,
-    y: 80,
-    width: 100,
-    height: 30,
-    locked: false,
-    norm: null,
+  placements: {
+    r1: { ...DEFAULT_PLACEMENTS.r1, norm: null },
+    r2: { ...DEFAULT_PLACEMENTS.r2, norm: null },
+    r3: { ...DEFAULT_PLACEMENTS.r3, norm: null },
   },
 
-  // The frame size the region was placed on. 0 means "never placed".
+  // Locking pins the region: switching pairs no longer moves it.
+  locked: false,
+
+  // The frame size the current placement was recorded on. 0 means "never placed".
   frame: { w: 0, h: 0 },
 
   // Display zoom for the region view only. It does not change what is captured.
@@ -71,34 +80,42 @@ export function loadState() {
     if (!raw) return base;
     const saved = JSON.parse(raw);
     const merged = { ...base, ...saved };
-    for (const key of ['labels', 'rates', 'region', 'frame', 'ocr', 'stableRead', 'sources', 'lastSeen']) {
+
+    for (const key of ['labels', 'rates', 'ocr', 'stableRead', 'sources', 'lastSeen', 'frame']) {
       merged[key] = { ...base[key], ...(saved[key] || {}) };
     }
+
+    for (const pair of ['r1', 'r2', 'r3']) {
+      merged.placements[pair] = { ...base.placements[pair], ...(saved.placements?.[pair] || {}) };
+    }
+
     return merged;
   } catch {
     return base;
   }
 }
 
-/** Store the current pixel region as fractions of the frame it sits on. */
-export function rememberRegionNorm(state) {
+/** Store a placement as fractions of the frame it sits on. */
+export function rememberPlacement(state, pairId) {
+  const placement = state.placements[pairId];
   const frame = state.frame;
-  if (!frame.w || !frame.h) return;
+  if (!placement || !frame.w || !frame.h) return;
 
-  state.region.norm = {
-    x: state.region.x / frame.w,
-    y: state.region.y / frame.h,
-    w: state.region.width / frame.w,
-    h: state.region.height / frame.h,
+  placement.norm = {
+    x: placement.x / frame.w,
+    y: placement.y / frame.h,
+    w: placement.width / frame.w,
+    h: placement.height / frame.h,
   };
 }
 
 /**
- * Rebuild the pixel region for a different frame size. Returns false when there is
- * nothing to rebuild from, so the caller keeps the stored pixels.
+ * Rebuild a placement's pixels for a different frame size. Returns false when there
+ * is nothing to rebuild from, so the caller keeps the stored pixels.
  */
-export function regionForFrame(state, frameW, frameH) {
-  const norm = state.region.norm;
+export function placementForFrame(state, pairId, frameW, frameH) {
+  const placement = state.placements[pairId];
+  const norm = placement?.norm;
   if (!norm || !frameW || !frameH) return false;
 
   const clamp = (value, low, high) => Math.max(low, Math.min(value, high));
@@ -112,10 +129,10 @@ export function regionForFrame(state, frameW, frameH) {
   const height = clamp(Math.round(norm.h * frameH), minH, frameH - y);
 
   state.frame = { w: frameW, h: frameH };
-  state.region.x = x;
-  state.region.y = y;
-  state.region.width = width;
-  state.region.height = height;
+  placement.x = x;
+  placement.y = y;
+  placement.width = width;
+  placement.height = height;
 
   return true;
 }
@@ -123,7 +140,9 @@ export function regionForFrame(state, frameW, frameH) {
 export function saveState(state) {
   if (typeof localStorage === 'undefined') return;
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    // state.region is an alias for the placement of the active pair, not stored state.
+    const { region, ...stored } = state;
+    localStorage.setItem(KEY, JSON.stringify(stored));
   } catch {
     /* quota or private mode: ignore */
   }
