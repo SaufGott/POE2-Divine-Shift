@@ -314,7 +314,7 @@ async function readRegion({ force = false } = {}) {
   const result = await engine.recognizeRegion(
     stageCanvas,
     { id: 'region', x: r.x, y: r.y, width: r.width, height: r.height },
-    effectiveAtlas(),
+    baseAtlas,
     { force },
   );
 
@@ -438,8 +438,10 @@ async function liveLoop() {
           saveState(state);
         }
       }
-    } catch {
-      /* a dropped frame is not worth a status message */
+    } catch (error) {
+      // A dropped frame is not worth a message, but a real failure is — this catch
+      // used to hide exactly the kind of bug that only showed up on Snapshot.
+      renderStatus(state, statusEl, `live read failed: ${error.message}`);
     } finally {
       liveBusy = false;
       render();

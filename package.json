@@ -7,6 +7,8 @@
   "scripts": {
     "vendor": "node scripts/fetch-vendor.mjs",
     "serve": "node serve.mjs",
+    "launch": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/launch.ps1",
+    "check": "node scripts/check-ids.mjs && node scripts/check-refs.mjs",
     "test": "node --test"
   }
 }

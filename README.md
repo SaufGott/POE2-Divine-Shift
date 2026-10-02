@@ -4,10 +4,17 @@ A local, offline browser dashboard. No external servers, no APIs: everything run
 browser against files served from this folder.
 
 ```
-node serve.mjs 8090                # static server on http://127.0.0.1:8090
-node --test                        # math / parser / playbook / pipeline / training / storage / UI tests (50)
-node scripts/fetch-vendor.mjs      # only if vendor/ is missing (needs network once)
+node serve.mjs 8090                    # static server on http://127.0.0.1:8090
+powershell -File scripts/launch.ps1    # starts the server if needed, then opens the browser
+node --test                            # math / parser / playbook / pipeline / training / storage / UI tests (50)
+node scripts/check-ids.mjs             # every id the code references exists in index.html
+node scripts/check-refs.mjs            # every called identifier is defined or imported
+node scripts/fetch-vendor.mjs          # only if vendor/ is missing (needs network once)
 ```
+
+`scripts/launch.ps1` is the quick-start: it checks whether a server is already answering on
+8090, starts one only if not, and opens the default browser. `powershell -File scripts/launch.ps1
+-Check` does the same without opening a browser, so you can see whether it would work.
 
 `vendor/` is already populated (Tesseract worker, all WASM core builds, `eng.traineddata.gz`),
 so the dashboard runs with no network at runtime.
@@ -236,7 +243,10 @@ monospace fallback so the live read does not jitter. Animations respect `prefers
 | [src/main.js](src/main.js) | State, event wiring, live OCR loop, snapshot flow, shortcuts |
 | [src/storage.js](src/storage.js) | localStorage persistence, region as fractions of the frame |
 | [serve.mjs](serve.mjs) | Dependency-free static server |
+| [scripts/launch.ps1](scripts/launch.ps1) | Quick start: reuse a running server or start one, then open the browser |
 | [scripts/fetch-vendor.mjs](scripts/fetch-vendor.mjs) | One-time asset download into `vendor/` |
+| [scripts/check-ids.mjs](scripts/check-ids.mjs) | Every id referenced by the code exists in `index.html` |
+| [scripts/check-refs.mjs](scripts/check-refs.mjs) | Every called identifier is defined or imported in its file |
 | [scripts/train.mjs](scripts/train.mjs) | Train the atlas from `training/*.png` |
 | [training/README.md](training/README.md) | Cropping rules for the training folder |
 | [tests/math.test.mjs](tests/math.test.mjs) | Math / parser / playbook tests |

@@ -1,6 +1,7 @@
 node_modules/
 *.log
 .DS_Store
+.codegraph/
 
 # vendor/ is committed on purpose: the app is fully offline and needs the vendored
 # Tesseract files. A clone should run without a network step.
