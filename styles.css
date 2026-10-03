@@ -433,21 +433,28 @@ button.snapshot:hover {
   white-space: nowrap;
 }
 
-/* Scale anchor: drag this corner to change the region size. */
+/* Scale anchor: a corner mark, not a filled square, so it does not cover the box. */
 .region-box .handle {
   position: absolute;
-  right: -3px;
-  bottom: -3px;
-  width: 14px;
-  height: 14px;
-  background: repeating-linear-gradient(
-    135deg,
-    var(--color-sunset) 0 3px,
-    var(--color-sand-light) 3px 6px
-  );
-  border: 1px solid var(--color-sand-light);
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  background: transparent;
+  border-right: 1px solid var(--color-sand-dark);
+  border-bottom: 1px solid var(--color-sand-dark);
   cursor: nwse-resize;
   pointer-events: auto;
+  transition: border-color var(--speed-quick);
+}
+
+.region-box:hover .handle {
+  border-color: var(--color-sunset);
+}
+
+/* Nothing to resize while locked. */
+.region-box.locked .handle {
+  display: none;
 }
 
 .region-box.locked {
@@ -456,15 +463,6 @@ button.snapshot:hover {
     135deg,
     rgba(56, 178, 56, 0.14) 0 4px,
     rgba(56, 178, 56, 0.05) 4px 8px
-  );
-  cursor: default;
-}
-
-.region-box.locked .handle {
-  background: repeating-linear-gradient(
-    135deg,
-    var(--color-success) 0 3px,
-    var(--color-sand-light) 3px 6px
   );
   cursor: default;
 }
