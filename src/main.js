@@ -52,6 +52,7 @@ let stream = null;
 let previewRunning = false;
 let previewFrame = null;
 let masterBox = null;
+let tagEl = null;
 let placeMode = false;
 
 let activePair = 'r1';
@@ -247,15 +248,21 @@ function buildOverlay() {
   masterBox = document.createElement('div');
   masterBox.className = `region-box${state.locked ? ' locked' : ''}`;
 
+  // The label sits above the box so it never covers the area you are dragging into.
+  tagEl = document.createElement('span');
+  tagEl.className = 'tag';
+
   const handle = document.createElement('span');
   handle.className = 'handle';
-  handle.title = 'resize';
+  handle.title = 'drag this corner to change the region size';
   handle.addEventListener('pointerdown', (event) => startResize(event));
+
   masterBox.addEventListener('pointerdown', (event) => {
     if (event.target === handle) return;
     startDrag(event);
   });
-  masterBox.appendChild(handle);
+
+  masterBox.append(tagEl, handle);
   overlay.appendChild(masterBox);
 
   positionOverlay();
@@ -275,7 +282,14 @@ function positionOverlay() {
   masterBox.style.width = pct(state.region.width, W);
   masterBox.style.height = pct(state.region.height, H);
   masterBox.classList.toggle('locked', state.locked);
-  masterBox.textContent = state.locked ? 'locked' : 'market line';
+
+  if (!tagEl) return;
+
+  const pair = pairLabels(state).find((p) => p.id === activePair);
+  const size = `${Math.round(state.region.width)}x${Math.round(state.region.height)}`;
+  tagEl.textContent = state.locked
+    ? `locked · ${size}`
+    : `scan box · ${pair.baseName} / ${pair.quoteName} · ${size}`;
 }
 
 function canvasScale() {
@@ -318,8 +332,8 @@ function startResize(event) {
   let lastY = event.clientY;
 
   const move = (event) => {
-    state.region.width = Math.max(40, Math.min(stageCanvas.width - state.region.x, state.region.width + (event.clientX - lastX) * scale));
-    state.region.height = Math.max(20, Math.min(stageCanvas.height - state.region.y, state.region.height + (event.clientY - lastY) * scale));
+    state.region.width = Math.max(20, Math.min(stageCanvas.width - state.region.x, state.region.width + (event.clientX - lastX) * scale));
+    state.region.height = Math.max(10, Math.min(stageCanvas.height - state.region.y, state.region.height + (event.clientY - lastY) * scale));
     lastX = event.clientX;
     lastY = event.clientY;
     positionOverlay();

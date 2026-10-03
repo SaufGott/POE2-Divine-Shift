@@ -406,27 +406,45 @@ button.snapshot:hover {
   pointer-events: none;
 }
 
+/* Striped outline so the box reads as a capture area, not a filled panel. */
 .region-box {
   position: absolute;
   pointer-events: auto;
-  border: 1px solid var(--color-sunset);
-  background: rgba(182, 128, 34, 0.12);
-  color: var(--color-sand-light);
-  font-family: var(--font-styled-caps);
-  font-size: 0.7rem;
-  padding: 1px var(--space-sm);
+  border: 1px dashed var(--color-sunset);
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(182, 128, 34, 0.14) 0 4px,
+    rgba(182, 128, 34, 0.05) 4px 8px
+  );
   cursor: grab;
   user-select: none;
   transition: border-color var(--speed-quick), background-color var(--speed-quick);
 }
 
+/* The label sits above the box so it never covers the area you are dragging into. */
+.region-box .tag {
+  position: absolute;
+  top: -1.5em;
+  left: 0;
+  font-family: var(--font-styled-caps);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--color-sand-light);
+  white-space: nowrap;
+}
+
+/* Scale anchor: drag this corner to change the region size. */
 .region-box .handle {
   position: absolute;
-  right: 1px;
-  bottom: 1px;
-  width: 12px;
-  height: 12px;
-  background: var(--color-sunset);
+  right: -3px;
+  bottom: -3px;
+  width: 14px;
+  height: 14px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-sunset) 0 3px,
+    var(--color-sand-light) 3px 6px
+  );
   border: 1px solid var(--color-sand-light);
   cursor: nwse-resize;
   pointer-events: auto;
@@ -434,13 +452,25 @@ button.snapshot:hover {
 
 .region-box.locked {
   border-color: var(--color-success);
-  background: rgba(56, 178, 56, 0.12);
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(56, 178, 56, 0.14) 0 4px,
+    rgba(56, 178, 56, 0.05) 4px 8px
+  );
   cursor: default;
 }
 
 .region-box.locked .handle {
-  background: var(--color-success);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-success) 0 3px,
+    var(--color-sand-light) 3px 6px
+  );
   cursor: default;
+}
+
+.region-box.locked .tag {
+  color: var(--color-success);
 }
 
 .coords input[type='number'] {

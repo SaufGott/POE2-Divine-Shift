@@ -43,17 +43,21 @@ that region itself. The full frame appears only while placing the box.
 1. **Start OCR** and pick the game window.
 2. The region starts at the positions that read reliably for the three rows:
 
-   | pair | x | y |
-   |---|---|---|
-   | Div / Ex | 784 | 551 |
-   | Omen / Ex | 765 | 615 |
-   | Div / Omen | 787 | 548 |
+   | pair | x | y | size |
+   |---|---|---|---|
+   | Div / Ex | 786 | 551 | 50 × 30 |
+   | Omen / Ex | 787 | 551 | 50 × 30 |
+   | Div / Omen | 787 | 551 | 50 × 30 |
 
    Switching pairs moves the region to that pair's row. Placing the box for a pair saves it as that
    pair's position, so a fine-tune survives. Each position is stored as fractions of the frame it was
    placed on, so a window resize or a DPI change rebuilds it instead of landing somewhere wrong — the
    Advanced section shows the stored percentages for the pair you are on. **Lock** (<kbd>L</kbd>)
    pins the current position for every pair instead of jumping to the pair's own row.
+
+   In place mode the box has a striped outline, its label sits **above** it so it never covers the
+   area you are dragging into, and the corner anchor changes the size. The label names the pair and
+   the current size.
 3. Zoom the view with the slider or <kbd>+</kbd> / <kbd>-</kbd> (1–8). Zoom changes only what you
    see; it never changes what is captured, so recognition is unaffected.
 4. Click one of the three pair buttons (`Div / Ex`, `Omen / Ex`, `Div / Omen`) — or press
@@ -70,7 +74,7 @@ A line is read as `first : second`, so `1 : 680` = 680 quote per 1 base. A lone 
 the rate. Crops are padded 2 px and upscaled with nearest-neighbour.
 
 Defaults are the values that actually work: threshold **auto (Otsu)**, capture scale 3, min stroke 2.
-The region defaults to **100 × 30**, which is enough for `1 : 690` at the game's font size.
+The region defaults to **50 × 30**, which is enough for `1 : 690` at the game's font size.
 
 ## Offsetting a rate
 

@@ -26,12 +26,9 @@ test('the stored state contains only what the app can change or read', () => {
 });
 
 test('each pair has its own placement, at the positions that read reliably', () => {
-  assert.equal(DEFAULT_STATE.placements.r1.x, 784);
-  assert.equal(DEFAULT_STATE.placements.r1.y, 551);
-  assert.equal(DEFAULT_STATE.placements.r2.x, 765);
-  assert.equal(DEFAULT_STATE.placements.r2.y, 615);
-  assert.equal(DEFAULT_STATE.placements.r3.x, 787);
-  assert.equal(DEFAULT_STATE.placements.r3.y, 548);
+  assert.deepEqual(DEFAULT_STATE.placements.r1, { x: 786, y: 551, width: 50, height: 30, norm: null });
+  assert.deepEqual(DEFAULT_STATE.placements.r2, { x: 787, y: 551, width: 50, height: 30, norm: null });
+  assert.deepEqual(DEFAULT_STATE.placements.r3, { x: 787, y: 551, width: 50, height: 30, norm: null });
 
   // One shared region is gone: the market UI shows a different row per pair.
   assert.ok(!('region' in DEFAULT_STATE), 'no single shared region');
@@ -48,9 +45,9 @@ test('a placement is stored as fractions of the frame it was placed on', () => {
   rememberPlacement(state, 'r1');
 
   assert.deepEqual(state.placements.r1.norm, {
-    x: 784 / 1000,
+    x: 786 / 1000,
     y: 551 / 500,
-    w: 100 / 1000,
+    w: 50 / 1000,
     h: 30 / 500,
   });
 
@@ -68,9 +65,9 @@ test('a different frame size rebuilds a placement from its stored fractions', ()
   const moved = placementForFrame(state, 'r2', 1280, 720);
   assert.ok(moved, 'the placement is rebuilt');
   assert.deepEqual(state.frame, { w: 1280, h: 720 });
-  assert.equal(state.placements.r2.x, 510);
-  assert.equal(state.placements.r2.y, 410);
-  assert.equal(state.placements.r2.width, 67);
+  assert.equal(state.placements.r2.x, 525);
+  assert.equal(state.placements.r2.y, 367);
+  assert.equal(state.placements.r2.width, 33);
   assert.equal(state.placements.r2.height, 20);
 
   // A frame smaller than the placement cannot hold it, so it is clamped.
@@ -97,7 +94,7 @@ test('the active-pair alias is not written to storage twice', () => {
 
   saveState(state);
 
-  const saved = JSON.parse(store['poe2-arb-dashboard-v7']);
+  const saved = JSON.parse(store['poe2-arb-dashboard-v8']);
   assert.ok(!('region' in saved), 'the alias is not stored');
   assert.deepEqual(saved.placements.r1, { ...DEFAULT_PLACEMENTS.r1, norm: null });
 

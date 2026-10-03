@@ -10,14 +10,14 @@
  * was placed on, so a window resize or a DPI change does not move it.
  */
 
-const KEY = 'poe2-arb-dashboard-v7';
+const KEY = 'poe2-arb-dashboard-v8';
 
 // Positions that read reliably for the three market rows, for the window they were
 // observed on. Placing the box for a pair updates that pair's placement.
 export const DEFAULT_PLACEMENTS = {
-  r1: { x: 784, y: 551, width: 100, height: 30 },
-  r2: { x: 765, y: 615, width: 100, height: 30 },
-  r3: { x: 787, y: 548, width: 100, height: 30 },
+  r1: { x: 786, y: 551, width: 50, height: 30 },
+  r2: { x: 787, y: 551, width: 50, height: 30 },
+  r3: { x: 787, y: 551, width: 50, height: 30 },
 };
 
 export const DEFAULT_STATE = {
