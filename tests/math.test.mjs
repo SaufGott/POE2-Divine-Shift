@@ -21,6 +21,13 @@ test('decimal rates stay exact rationals', () => {
   assert.equal(parseManual('4.5', 1).toString(), '9/2');
 });
 
+test('a stored num/den pair is the rate, not just its numerator', () => {
+  assert.equal(makeRate('Omen', 'Ex', '5', '2').value.toString(), '5/2');
+  assert.equal(makeRate('Omen', 'Ex', '45', '10').value.toString(), '9/2');
+  assert.equal(makeRate('Div', 'Ex', 48).value.toString(), '48', 'the three-argument form still works');
+  assert.throws(() => makeRate('Div', 'Ex', 6, 0), /zero denominator/);
+});
+
 test('forward cycle: factor, minimal integer batch and per-step amounts', () => {
   const { forward } = analyzeBoth(rates, LABELS);
 

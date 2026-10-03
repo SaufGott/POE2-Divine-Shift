@@ -16,9 +16,15 @@ import { parseRatioLine } from '../src/parser.js';
 const FONT = {
   '0': ['11111', '10001', '10001', '10001', '10001', '10001', '11111'],
   '1': ['00100', '01100', '00100', '00100', '00100', '00100', '00100'],
+  '4': ['11111', '10001', '10001', '11111', '00001', '00001', '00001'],
+  '5': ['11111', '10000', '10000', '11111', '00001', '00001', '11111'],
   '6': ['11111', '10000', '10000', '11111', '10001', '10001', '11111'],
   '8': ['11111', '10001', '10001', '11111', '10001', '10001', '11111'],
+  // A period sits at the left of its advance and on the baseline, which is what
+  // makes it tight against the digits — unlike the colon, which stands in space.
+  '.': ['00000', '00000', '00000', '00000', '00000', '00000', '11000'],
   ':': ['00000', '00100', '00000', '00000', '00000', '00100', '00000'],
+  ' ': ['00000', '00000', '00000', '00000', '00000', '00000', '00000'],
 };
 
 /**
@@ -57,6 +63,18 @@ function renderLine(text, scale, pad = 2) {
   }
 
   return { mask: outlined, clean, w, h };
+}
+
+/** An atlas built the way the live path uses it: from the unstripped mask. */
+function trainAtlas(digits, scale = 4) {
+  const atlas = {};
+
+  for (const digit of digits) {
+    const { mask, w, h } = renderLine(digit, scale);
+    learn(atlas, digit, normalize(mask, w, h, segment(mask, w, h)[0]));
+  }
+
+  return atlas;
 }
 
 test('otsu separates a dark background from light glyphs', () => {
@@ -131,6 +149,55 @@ test('segmentation finds glyphs left-to-right and the colon as a separator', () 
 
   const xs = boxes.map((b) => b.x);
   assert.deepEqual(xs, [...xs].sort((a, b) => a - b), 'left-to-right order');
+});
+
+test('a decimal point is a dot, not a colon', () => {
+  const { mask, w, h } = renderLine('4.5', 4);
+  const boxes = segment(mask, w, h);
+
+  assert.deepEqual(boxes.map((b) => b.kind), ['glyph', 'dot', 'glyph'], 'the period is its own component');
+
+  const result = recognizeLine(mask, w, h, trainAtlas(['4', '5']));
+  assert.ok(result.complete, 'both digits matched');
+  assert.equal(result.text, '4.5', 'the line keeps its decimal point');
+  assert.equal(parseRatioLine(result.text).toString(), '9/2', 'read as 4.5, not as 5/4');
+});
+
+test('a period below the digit area floor is still found', () => {
+  const w = 40;
+  const h = 12;
+  const mask = new Uint8Array(w * h);
+
+  // A full-height digit, then a 6 px period: under the digit floor, over the dot floor.
+  for (let y = 2; y < 10; y += 1) for (let x = 2; x < 8; x += 1) mask[y * w + x] = 1;
+  for (let y = 8; y < 10; y += 1) for (let x = 10; x < 13; x += 1) mask[y * w + x] = 1;
+
+  const boxes = segment(mask, w, h);
+  assert.equal(boxes.length, 2, 'the period survives the digit floor');
+  assert.deepEqual(boxes.map((b) => b.kind), ['glyph', 'dot']);
+
+  assert.equal(segment(mask, w, h, { minDotArea: 9 }).length, 1, 'under the dot floor it is dropped again');
+});
+
+test('a lone dot standing in whitespace is still the colon', () => {
+  const { mask, w, h } = renderLine('1 . 5', 4);
+  const boxes = segment(mask, w, h);
+
+  assert.deepEqual(boxes.map((b) => b.kind), ['glyph', 'separator', 'glyph'], 'wide gaps on both sides');
+  assert.equal(recognizeLine(mask, w, h, trainAtlas(['1', '5'])).text, '1 : 5');
+});
+
+test('a dot blob too tall for its width is the colon, not a period', () => {
+  const w = 40;
+  const h = 24;
+  const mask = new Uint8Array(w * h);
+
+  // A full-height digit, then a narrow blob sitting tight against it.
+  for (let y = 2; y < 22; y += 1) for (let x = 2; x < 9; x += 1) mask[y * w + x] = 1;
+  for (let y = 14; y < 22; y += 1) for (let x = 11; x < 12; x += 1) mask[y * w + x] = 1;
+
+  const boxes = segment(mask, w, h);
+  assert.deepEqual(boxes.map((b) => b.kind), ['glyph', 'separator'], '8 px tall on 1 px wide is two merged dots');
 });
 
 test('the atlas learns a digit and matches a noisy variant of it', () => {

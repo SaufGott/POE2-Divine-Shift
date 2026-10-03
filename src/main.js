@@ -257,12 +257,20 @@ function buildOverlay() {
   handle.title = 'drag this corner to change the region size';
   handle.addEventListener('pointerdown', (event) => startResize(event));
 
+  // A dot on each of the other three corners. They are marks, not targets: the
+  // pointer passes through them so the box stays draggable from anywhere.
+  const corners = ['tl', 'tr', 'bl'].map((pos) => {
+    const dot = document.createElement('span');
+    dot.className = `corner ${pos}`;
+    return dot;
+  });
+
   masterBox.addEventListener('pointerdown', (event) => {
     if (event.target === handle) return;
     startDrag(event);
   });
 
-  masterBox.append(tagEl, handle);
+  masterBox.append(tagEl, ...corners, handle);
   overlay.appendChild(masterBox);
 
   positionOverlay();

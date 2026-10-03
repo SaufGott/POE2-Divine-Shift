@@ -134,8 +134,16 @@ export class Rational {
 /* Rates                                                               */
 /* ------------------------------------------------------------------ */
 
-export function makeRate(base, quote, value) {
-  const r = Rational.from(value);
+/**
+ * A rate is stored as a num/den pair, so both halves have to be honoured. Passing
+ * the pair as three arguments silently dropped the denominator: a snapshot of 2.50
+ * lands as { num: '5', den: '2' } and the row then showed 5.
+ */
+export function makeRate(base, quote, value, denominator = 1) {
+  const d = Rational.from(denominator);
+  if (d.isZero()) throw new Error(`rate ${base}->${quote} has a zero denominator`);
+
+  const r = Rational.from(value).div(d);
   if (r.isZero()) throw new Error(`rate ${base}->${quote} is zero`);
   return { base, quote, value: r };
 }

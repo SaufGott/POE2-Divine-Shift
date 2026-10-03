@@ -128,6 +128,23 @@ test('the change column sits right after the rate column', () => {
   assert.equal(ratio.find('num-input').value, '48', 'the value input shows the rate as typed');
 });
 
+test('a stored num/den pair renders as the decimal it was read as', () => {
+  const state = makeState({
+    rates: {
+      r1: makeRate('Div', 'Ex', 48, '1'),
+      r2: makeRate('Omen', 'Ex', '5', '2'),
+      r3: makeRate('Div', 'Omen', 10, '1'),
+    },
+  });
+
+  const root = document.createElement('div');
+  ui.renderRates(state, root, () => {}, () => {});
+
+  const input = root.find('rates-table').children[2].findDeep('num-input');
+  assert.equal(input.value, '2.5', 'the row shows 2.5, not its numerator 5');
+  assert.equal(input.title, 'exact value 5/2');
+});
+
 test('the fit button replaces the entered value', () => {
   const state = makeState({
     rates: {

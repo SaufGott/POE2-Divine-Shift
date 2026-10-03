@@ -433,28 +433,60 @@ button.snapshot:hover {
   white-space: nowrap;
 }
 
-/* Scale anchor: a corner mark, not a filled square, so it does not cover the box. */
+/* One dot on each corner of the region, so the box reads as a defined area. Only
+   the bottom-right dot is the scale anchor; the other three must not swallow the
+   drag, so they stay out of the pointer path. */
+.region-box .corner,
 .region-box .handle {
   position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 10px;
-  height: 10px;
-  background: transparent;
-  border-right: 1px solid var(--color-sand-dark);
-  border-bottom: 1px solid var(--color-sand-dark);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-sand-dark);
+  transition: background-color var(--speed-quick);
+}
+
+.region-box .corner {
+  pointer-events: none;
+}
+
+.region-box .corner.tl {
+  top: -2px;
+  left: -2px;
+}
+
+.region-box .corner.tr {
+  top: -2px;
+  right: -2px;
+}
+
+.region-box .corner.bl {
+  bottom: -2px;
+  left: -2px;
+}
+
+/* Scale anchor: half what it was — a 5 px dot on the corner instead of a 10 px
+   square covering it. */
+.region-box .handle {
+  right: -2px;
+  bottom: -2px;
   cursor: nwse-resize;
   pointer-events: auto;
-  transition: border-color var(--speed-quick);
 }
 
 .region-box:hover .handle {
-  border-color: var(--color-sunset);
+  background: var(--color-sunset);
 }
 
 /* Nothing to resize while locked. */
 .region-box.locked .handle {
-  display: none;
+  cursor: default;
+  pointer-events: none;
+}
+
+.region-box.locked .corner,
+.region-box.locked .handle {
+  background: var(--color-success);
 }
 
 .region-box.locked {

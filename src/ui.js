@@ -97,7 +97,11 @@ export function drawRegionView(canvas, sourceCanvas, state, live) {
 
   for (const glyph of live.glyphs || []) {
     if (!glyph.box) continue;
-    ctx.strokeStyle = glyph.kind === 'separator' ? '#837053' : glyph.score ? '#b68022' : '#ff342f';
+    // Dots get their own colour so you can see whether the pipeline saw the
+    // decimal point or read it as a colon.
+    ctx.strokeStyle = glyph.kind === 'dot'
+      ? '#00b6ff'
+      : glyph.kind === 'separator' ? '#837053' : glyph.score ? '#b68022' : '#ff342f';
     ctx.lineWidth = 1;
     ctx.strokeRect(
       glyph.box.x * scale + 0.5,

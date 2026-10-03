@@ -6,7 +6,7 @@ browser against files served from this folder.
 ```
 node serve.mjs 8090                    # static server on http://127.0.0.1:8090
 powershell -File scripts/launch.ps1    # starts the server if needed, then opens the browser
-node --test                            # math / parser / playbook / pipeline / training / storage / UI tests (50)
+node --test                            # math / parser / playbook / pipeline / training / storage / UI tests (56)
 node scripts/check-ids.mjs             # every id the code references exists in index.html
 node scripts/check-refs.mjs            # every called identifier is defined or imported
 node scripts/fetch-vendor.mjs          # only if vendor/ is missing (needs network once)
@@ -55,9 +55,10 @@ that region itself. The full frame appears only while placing the box.
    Advanced section shows the stored percentages for the pair you are on. **Lock** (<kbd>L</kbd>)
    pins the current position for every pair instead of jumping to the pair's own row.
 
-   In place mode the box has a striped outline, its label sits **above** it so it never covers the
-   area you are dragging into, and the corner anchor changes the size. The label names the pair and
-   the current size.
+   In place mode the box has a striped outline, a dot on each of its four corners, and its label sits
+   **above** it so it never covers the area you are dragging into. Only the bottom-right dot is the
+   scale anchor (5 px, half what it was) and changes the size; the other three are marks, so the drag
+   passes through them. The label names the pair and the current size.
 3. Zoom the view with the slider or <kbd>+</kbd> / <kbd>-</kbd> (1–8). Zoom changes only what you
    see; it never changes what is captured, so recognition is unaffected.
 4. Click one of the three pair buttons (`Div / Ex`, `Omen / Ex`, `Div / Omen`) — or press
@@ -116,8 +117,9 @@ between the DOM and those functions:
    never strips, so the live path must not either) and `mask` (stripped, used only for Tesseract).
    Matching a stripped live glyph against unstripped templates scored 0.61–0.77, below the 0.8
    threshold, which is why the atlas path failed before this was fixed.
-4. `segment.js` — connected components, left-to-right. Blobs much shorter than the tallest one are
-   separators (the colon), never classified as digits.
+4. `segment.js` — connected components, left-to-right. Each box gets a kind: `glyph` (a full-height
+   blob, the thing the atlas classifies), `separator` (the colon), `dot` (a decimal point). Dots are
+   never classified — they are decided by shape and position, see below.
 5. `atlas.js` — the **self-learning glyph atlas**. Each confirmed read stores what a digit looks
    like in your font (normalised 16×16, up to 5 samples per digit). Once a digit is learned it is
    matched locally, without Tesseract.
@@ -127,6 +129,16 @@ between the DOM and those functions:
 The vendored Tesseract bundle is text-only — it exposes no confidence and no word boxes — so the
 **confidence** number in the live read is the pipeline's own signal: the average match score over the
 glyph shapes in the crop. It is not a Tesseract confidence.
+
+**Decimals.** A period is a small blob, so it needs its own lower area floor (`minDotArea`, 4): with the
+digit floor it was dropped and `4.5` came back as `45`. Being short is not enough to call a blob
+punctuation, because the colon is short too. A colon is two dots stacked in one column, or a lone dot
+standing in whitespace; a decimal point is a single square dot sitting tight against a digit. So
+`segment` groups short blobs by column, and a lone dot is a decimal point only when it is square and its
+gap to the nearest digit is under 30% of the line height. `4.5` now rebuilds as `4.5` and parses as
+`9/2`; before this it rebuilt as `4 : 5` and parsed as `5/4`. The region view draws dots in blue so you
+can see which one the pipeline saw, and the parser already accepted decimals — the loss was in
+segmentation, not in the arithmetic.
 
 **Training is offline.** The app loads `training/atlas.json` at boot and does not learn at runtime —
 there is no Train button and no glyph panel. Add or replace PNGs in `training/`, run the script,
@@ -263,7 +275,7 @@ monospace fallback so the live read does not jitter. Animations respect `prefers
 | [scripts/train.mjs](scripts/train.mjs) | Train the atlas from `training/*.png` |
 | [training/README.md](training/README.md) | Cropping rules for the training folder |
 | [tests/math.test.mjs](tests/math.test.mjs) | Math / parser / playbook tests |
-| [tests/pipeline.test.mjs](tests/pipeline.test.mjs) | Threshold, outline, segmentation, atlas, stable read, cache |
+| [tests/pipeline.test.mjs](tests/pipeline.test.mjs) | Threshold, outline, segmentation, decimal point vs colon, atlas, stable read, cache |
 | [tests/train.test.mjs](tests/train.test.mjs) | PNG reader, glyph extraction, tolerant matching |
 | [tests/suggest.test.mjs](tests/suggest.test.mjs) | Nearest fitting ratio, decimal formatting |
 | [tests/storage.test.mjs](tests/storage.test.mjs) | Stored keys, per-pair placements, rebuild on a new frame size |
